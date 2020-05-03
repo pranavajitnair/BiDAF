@@ -1,15 +1,15 @@
 import torch.nn as nn
 
-from layers import HighWay,Convolution,OutputLayer,ModelingLayer,ContextEmbedding
-from attention import BiDirectionalAttention 
+from Model.layers import HighWay,Convolution,OutputLayer,ModelingLayer,ContextEmbedding
+from Model.attention import BiDirectionalAttention 
 
 
 class Model(nn.Module):
         def __init__(self,embed_size,char_size,hidden_size,kernel_size,n_char,type):
-                super(Model,self)
+                super(Model,self).__init__()
                 
-                self.highway=HighWay(hidden_size,embed_size,char_size)
-                self.char_embedding=Convolution(kernel_size,n_char,embed_size,char_size)
+                self.highway=HighWay(embed_size,char_size)
+                self.char_embedding=Convolution(kernel_size,n_char+1,17,char_size)
                 self.context_embedding=ContextEmbedding(hidden_size)
                 
                 self.attention=BiDirectionalAttention(hidden_size)
