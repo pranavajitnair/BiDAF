@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch.optim as optim
 
+import argparse
+
 from Data.utils import read_data,get_structure,get_index,get_question_set,get_word_embeddings,get_prediction,get_f1,get_exact_match
 from Data.dataloader import DataLoader
 
@@ -53,20 +55,20 @@ def validate(model,dataloader,iterations,lossFunction):
         return f1/iterations,em/iterations,loss.item()/iterations
 
         
-def main():
-        path='/home/pranav/ml/data/SQuAD 1.1/train-v1.1.json'
-        path_valid='/home/pranav/ml/data/SQuAD 1.1/dev-v1.1.json'
+def main(args):
+        path=args.train_path
+        path_valid=args.dev_path
         
         data=read_data(path)
         data_valid=read_data(path_valid)
         
-        hidden_size=100
-        char_size=100
-        embedding_size=100
+        hidden_size=args.hidden_size
+        char_size=args.convolutions
+        embedding_size=args.embedding_size
         
-        kernel_size=[2,2,2]
+        kernel_size=[args.kernel_size1,args.kernel_size2,args.kernel_size3]
         
-        type='concat'
+        type=args.modeling_type
         
         output,char_set=get_structure(data)
         output_valid,char_set_valid=get_structure(data_valid)
@@ -91,14 +93,35 @@ def main():
         
         model=Model(embedding_size,char_size,hidden_size,kernel_size,n_char,type).cuda()
         
-        epochs=1200
+        epochs=args.epochs
         iterations=len(question_set)
         iterations_validation=len(question_set_valid)
         
         lossFunction=nn.CrossEntropyLoss()
-        optimizer=optim.Adamax(model.parameters(),lr=0.07)
+        optimizer=optim.Adamax(model.parameters(),lr=args.learning_rate)
         
         train(model,dataLoader,lossFunction,optimizer,epochs,iterations,dataLoader_valid,iterations_validation)
         
-if __name__=='__main__':    
-        main()
+        
+def setup():
+        parser=argparse.ArgumentParser('options for file')
+        
+        parser.add_argument('-- dev_path',type=str,default='/home/pranav/ml/data/SQuAD 1.1/dev-v1.1.json',help='enter development file path')
+        parser.add_argument('--train_path',type=str,default='/home/pranav/ml/data/SQuAD 1.1/train-v1.1.json',help='enter training file path')
+        parser.add_argument('--learning_rate',type=float,default=0.5,help='learning rate')
+        parser.add_argument('--epochs',type=int,default=12)
+        parser.add_argument('--modeling_type',type=str,default='concat',help='enter type for modeling')
+        parser.add_argument('--hidden_size',type=int,default=100,help="hidden sizes for LSTM's")
+        parser.add_argument('--convolutions',type=int,default=100,help='output channels for  Conv1D')
+        parser.add_argument('--embedding_size',type=int,default=100,help='embedding size for Word2Vec')
+        parser.add_argument('--kernel_size1',type=int,default=2,help='first kernel size')
+        parser.add_argument('--kernel_size2',type=int,default=2,help='second kernel size')
+        parser.add_argument('--kernel_size3',type=int,default=2,help='second kernel size')
+        
+        args=parser.parse_args()
+        
+        return args
+        
+if __name__=='__main__':
+        args=setup()
+        main(args)
