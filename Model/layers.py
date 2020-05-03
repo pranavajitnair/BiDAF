@@ -4,14 +4,14 @@ import torch.nn.functional as F
 
 
 class HighWay(nn.Module):
-        def __init__(self,h_size,word_dim,char_dim):
+        def __init__(self,word_dim,char_dim):
                 super(HighWay,self).__init__()
                 
-                self.Dense1=nn.Linear(word_dim+char_dim,h_size)
-                self.transform=nn.Linear(word_dim+char_dim,h_size)
+                self.Dense1=nn.Linear(word_dim+3*char_dim,word_dim+3*char_dim)
+                self.transform=nn.Linear(word_dim+3*char_dim,word_dim+3*char_dim)
             
         def forward(self,word,char):
-                input=torch.cat([char,word],dim=1)
+                input=torch.cat([char,word],dim=2)
                 
                 output=F.relu_(self.Dense1(input))
                 transform=torch.sigmoid_(self.transform(input))
@@ -21,8 +21,7 @@ class HighWay(nn.Module):
           
 class Convolution(nn.Module):
         def __init__(self,kernel_size,char_size,embedding_dim,output_channels):
-                super(Convolution,self)    
-            
+                super(Convolution,self).__init__()  
                 self.embedding=nn.Embedding(char_size,embedding_dim)
                 
                 self.conv1=nn.Conv1d(embedding_dim,output_channels,kernel_size[0])
@@ -37,46 +36,49 @@ class Convolution(nn.Module):
                 output2=self.conv2(input)
                 output3=self.conv3(input)
                 
-                output1=torch.max(output1,dim=2)
-                output2=torch.max(output2,dim=2)
-                output3=torch.max(output3,dim=2)
+                output1,_=torch.max(output1,dim=2)
+                output2,_=torch.max(output2,dim=2)
+                output3,_=torch.max(output3,dim=2)
                 
-                output=torch.cat([output1,output2,output3],dim=1)
+                output=torch.cat([output1,output2,output3],dim=1).unsqueeze(0)
                 
                 return output
                 
             
 class OutputLayer(nn.Module):
         def __init__(self,hidden_size):
-                super(OutputLayer,self)
+                super(OutputLayer,self).__init__()
                 
                 self.start=nn.Linear(hidden_size*10,1)
                 self.end=nn.Linear(hidden_size*10,1)
                 
-                self.m_to_m2=nn.LSTM(hidden_size,hidden_size,num_layers=2,bidirectional=True)
+                self.m_to_m2=nn.LSTM(2*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True)
                 
         def forward(self,G,M):
                 input1=torch.cat([G,M],dim=2)
-                input2,(hidden,cell_state)=self.m_to_m2(M)
+
+                input2,(hidden,cell_state)=self.m_to_m2(M,None)
+                input2=torch.cat([G,input2],dim=2)
                 
-                starts=self.start(input1.transpose(0,1))
-                ends=self.end(input2.transpose(0,1))
+                starts=self.start(input1).view(1,-1)
+                ends=self.end(input2).view(1,-1)
                 
                 return starts,ends
    
          
 class ModelingLayer(nn.Module):
         def __init__(self,type,h_size):
-                super(ModelingLayer,self)
+                super(ModelingLayer,self).__init__()
                 
                 self.type=type
-                self.m=nn.LSTM(h_size*8,h_size,bidirectional=True,num_layers=2)
+                self.m=nn.LSTM(h_size*8,h_size,bidirectional=True,num_layers=2,batch_first=True)
                 
         def forward(self,U_toggler,H_toggler,H):
                 if self.type=='concat':
-                        G=torch.cat([H,U_toggler,H*U_toggler,H*H_toggler])
-                        M,(hidden,cell_state)=self.m(G)
-                        
+                        G=torch.cat([H,U_toggler,H*U_toggler,H*H_toggler],dim=2)
+                
+                        M,(hidden,cell_state)=self.m(G,None)
+
                         return G,M
                 else:
                         raise NotImplementedError("Correct type has not been passed")
@@ -84,12 +86,12 @@ class ModelingLayer(nn.Module):
                         
 class ContextEmbedding(nn.Module):
         def __init__(self,hidden_size):
-                super(ContextEmbedding,self)
+                super(ContextEmbedding,self).__init__()
                 
-                self.context_embedding=nn.LSTM(hidden_size,hidden_size,num_layers=2,bidirectional=True)
+                self.context_embedding=nn.LSTM(4*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True)
                 
         def forward(self,input):
-            
-                output,(hidden_state,cell_state)=self.context_embedding(input)
+                # print(input.shape)
+                output,(hidden_state,cell_state)=self.context_embedding(input,None)
                 
                 return output
