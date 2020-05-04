@@ -7,8 +7,8 @@ class HighWay(nn.Module):
         def __init__(self,word_dim,char_dim):
                 super(HighWay,self).__init__()
                 
-                self.Dense1=nn.Linear(word_dim+3*char_dim,word_dim+3*char_dim)
-                self.transform=nn.Linear(word_dim+3*char_dim,word_dim+3*char_dim)
+                self.Dense1=nn.Linear(word_dim+char_dim,word_dim+char_dim)
+                self.transform=nn.Linear(word_dim+char_dim,word_dim+char_dim)
             
         def forward(self,word,char):
                 input=torch.cat([char,word],dim=2)
@@ -85,7 +85,7 @@ class ContextEmbedding(nn.Module):
         def __init__(self,hidden_size,dropout):
                 super(ContextEmbedding,self).__init__()
                 
-                self.context_embedding=nn.LSTM(4*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True,dropout=dropout)
+                self.context_embedding=nn.LSTM(2*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True,dropout=dropout)
                 
         def forward(self,input):
                 # print(input.shape)
