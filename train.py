@@ -65,8 +65,11 @@ def main(args):
         hidden_size=args.hidden_size
         char_size=args.convolutions
         embedding_size=args.embedding_size
+        char_embed_size=args.char_embedding_size
         
-        kernel_size=[args.kernel_size1,args.kernel_size2,args.kernel_size3]
+        dropout=args.dropout
+        
+        kernel_size=args.kernel_size1
         
         type=args.modeling_type
         
@@ -91,7 +94,7 @@ def main(args):
         dataLoader=DataLoader(output,char_output,word_dict_context,word_dict_question)
         dataLoader_valid=DataLoader(output_valid,char_output_valid,word_dict_context_valid,word_dict_question_valid)
         
-        model=Model(embedding_size,char_size,hidden_size,kernel_size,n_char,type).cuda()
+        model=Model(embedding_size,char_size,hidden_size,kernel_size,n_char,type,char_embed_size,dropout).cuda()
         
         epochs=args.epochs
         iterations=len(question_set)
@@ -108,15 +111,16 @@ def setup():
         
         parser.add_argument('-- dev_path',type=str,default='/home/pranav/ml/data/SQuAD 1.1/dev-v1.1.json',help='enter development file path')
         parser.add_argument('--train_path',type=str,default='/home/pranav/ml/data/SQuAD 1.1/train-v1.1.json',help='enter training file path')
+        
         parser.add_argument('--learning_rate',type=float,default=0.5,help='learning rate')
         parser.add_argument('--epochs',type=int,default=12)
         parser.add_argument('--modeling_type',type=str,default='concat',help='enter type for modeling')
         parser.add_argument('--hidden_size',type=int,default=100,help="hidden sizes for LSTM's")
         parser.add_argument('--convolutions',type=int,default=100,help='output channels for  Conv1D')
         parser.add_argument('--embedding_size',type=int,default=100,help='embedding size for Word2Vec')
-        parser.add_argument('--kernel_size1',type=int,default=2,help='first kernel size')
-        parser.add_argument('--kernel_size2',type=int,default=2,help='second kernel size')
-        parser.add_argument('--kernel_size3',type=int,default=2,help='second kernel size')
+        parser.add_argument('--kernel_size1',type=int,default=5,help='first kernel size')
+        parser.add_argument('--dropout',type=float,default=0.2)
+        parser.add_argument('--char_embedding_size',type=int,default=8)
         
         args=parser.parse_args()
         

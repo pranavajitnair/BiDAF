@@ -5,18 +5,18 @@ from Model.attention import BiDirectionalAttention
 
 
 class Model(nn.Module):
-        def __init__(self,embed_size,char_size,hidden_size,kernel_size,n_char,type):
+        def __init__(self,embed_size,char_size,hidden_size,kernel_size,n_char,type,char_embed_size,dropout):
                 super(Model,self).__init__()
                 
                 self.highway=HighWay(embed_size,char_size)
-                self.char_embedding=Convolution(kernel_size,n_char+1,17,char_size)
-                self.context_embedding=ContextEmbedding(hidden_size)
+                self.char_embedding=Convolution(kernel_size,n_char+1,char_embed_size,char_size,dropout)
+                self.context_embedding=ContextEmbedding(hidden_size,dropout)
                 
                 self.attention=BiDirectionalAttention(hidden_size)
                 
-                self.modelinglayer=ModelingLayer(type,hidden_size)
+                self.modelinglayer=ModelingLayer(type,hidden_size,dropout)
                 
-                self.outputlayer=OutputLayer(hidden_size)
+                self.outputlayer=OutputLayer(hidden_size,dropout)
                 
         def forward(self,sentence_context,sentence_question,char_sentence_question,char_sentence_context):
                 char_embeds_context=self.char_embedding(char_sentence_context)
