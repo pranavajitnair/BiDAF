@@ -20,39 +20,36 @@ class HighWay(nn.Module):
   
           
 class Convolution(nn.Module):
-        def __init__(self,kernel_size,char_size,embedding_dim,output_channels):
+        def __init__(self,kernel_size,char_size,embedding_dim,output_channels,dropout):
                 super(Convolution,self).__init__()  
                 self.embedding=nn.Embedding(char_size,embedding_dim)
                 
-                self.conv1=nn.Conv1d(embedding_dim,output_channels,kernel_size[0])
-                self.conv2=nn.Conv1d(embedding_dim,output_channels,kernel_size[1])
-                self.conv3=nn.Conv1d(embedding_dim,output_channels,kernel_size[2])
+                self.conv1=nn.Conv1d(embedding_dim,output_channels,kernel_size)
+                
+                self.dropout1=nn.Dropout(p=dropout)
+                self.relu=nn.ReLU()
                 
         def forward(self,input):
                 input=self.embedding(input)
                 input=input.transpose(1,2)
                 
                 output1=self.conv1(input)
-                output2=self.conv2(input)
-                output3=self.conv3(input)
-                
-                output1,_=torch.max(output1,dim=2)
-                output2,_=torch.max(output2,dim=2)
-                output3,_=torch.max(output3,dim=2)
-                
-                output=torch.cat([output1,output2,output3],dim=1).unsqueeze(0)
+                output1=self.dropout1(output1)
+                 
+                output1,_=torch.max(output1,dim=2).unsqueeze(0)
+                output=self.relu(output1)
                 
                 return output
                 
             
 class OutputLayer(nn.Module):
-        def __init__(self,hidden_size):
+        def __init__(self,hidden_size,dropout):
                 super(OutputLayer,self).__init__()
                 
                 self.start=nn.Linear(hidden_size*10,1)
                 self.end=nn.Linear(hidden_size*10,1)
                 
-                self.m_to_m2=nn.LSTM(2*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True)
+                self.m_to_m2=nn.LSTM(2*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True,dropout=dropout)
                 
         def forward(self,G,M):
                 input1=torch.cat([G,M],dim=2)
@@ -67,11 +64,11 @@ class OutputLayer(nn.Module):
    
          
 class ModelingLayer(nn.Module):
-        def __init__(self,type,h_size):
+        def __init__(self,type,h_size,dropout):
                 super(ModelingLayer,self).__init__()
                 
                 self.type=type
-                self.m=nn.LSTM(h_size*8,h_size,bidirectional=True,num_layers=2,batch_first=True)
+                self.m=nn.LSTM(h_size*8,h_size,bidirectional=True,num_layers=2,batch_first=True,dropout=dropout)
                 
         def forward(self,U_toggler,H_toggler,H):
                 if self.type=='concat':
@@ -85,10 +82,10 @@ class ModelingLayer(nn.Module):
                         
                         
 class ContextEmbedding(nn.Module):
-        def __init__(self,hidden_size):
+        def __init__(self,hidden_size,dropout):
                 super(ContextEmbedding,self).__init__()
                 
-                self.context_embedding=nn.LSTM(4*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True)
+                self.context_embedding=nn.LSTM(4*hidden_size,hidden_size,num_layers=2,bidirectional=True,batch_first=True,dropout=dropout)
                 
         def forward(self,input):
                 # print(input.shape)
