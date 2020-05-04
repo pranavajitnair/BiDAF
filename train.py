@@ -101,7 +101,7 @@ def main(args):
         iterations_validation=len(question_set_valid)
         
         lossFunction=nn.CrossEntropyLoss()
-        optimizer=optim.Adamax(model.parameters(),lr=args.learning_rate)
+        optimizer=optim.Adadelta(model.parameters(),lr=args.learning_rate)
         
         train(model,dataLoader,lossFunction,optimizer,epochs,iterations,dataLoader_valid,iterations_validation)
         
